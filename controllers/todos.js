@@ -18,6 +18,10 @@ class todoController {
         
         })
     }
+
+    getTodos(req, res){
+        res.json({tasks: this.TODOS})
+    }
 }   
 
 
