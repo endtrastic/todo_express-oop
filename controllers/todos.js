@@ -1,16 +1,22 @@
+import { json } from 'express'
 import {Todo} from '../models/todo.js'
+import { fileManager } from "../utils/files.js"
 
 class todoController {
     constructor(){
-        this.TODOS = []  
+        this.initTodos()  
     } 
 
-    createTodo(req, res){
+    async createTodo(req, res){
         // The post req data
         const task = req.body.task
 
         const newTodo = new Todo(Math.random().toString(), task)
         this.TODOS.push(newTodo)
+
+        //  Save data to file
+        await fileManager.writeFile('./data/todos.json', this.TODOS)
+
 
         res.json({
             message: 'Created the new todo object',
@@ -19,11 +25,22 @@ class todoController {
         })
     }
 
+    async initTodos(){
+        const todosData = await fileManager.readFile('./data/todos.json')
+
+        if (todosData !== null){
+            this.TODOS = todosData
+        } else {
+            this.TODOS = []
+        }
+    }
+
+
     getTodos(req, res){
         res.json({tasks: this.TODOS})
     }
 
-    updateTodo(req, res){
+    async updateTodo(req, res){
         // Getting id from url params
         const todoId = req.params.id
         // Getting the updated name for req
@@ -40,15 +57,16 @@ class todoController {
 
         // Updated code if correct
         this.TODOS[todoIndex] = new Todo(this.TODOS[todoIndex].id, updatedTask)
+        // Write the updated todo into json file
+        await fileManager.writeFile('./data/todos.json', this.TODOS)
         // Show the updated info
         res.json({
             message: 'Updated todo',
-            updatedTask: this.TODOS[todoIndex]
-
+            updatedTask: this.TODOS[todoIndex],
         })
     }
 
-    deleteTodo(req, res) {
+    async deleteTodo(req, res) {
         // Getting the id
         const taskId = req.params.id;
         const taskbody = req.params.body
@@ -56,15 +74,15 @@ class todoController {
         const taskIndex = this.TODOS.findIndex((todo) => todo.id === taskId); 
     
         if (taskIndex < 0) {
-            // Correcting the splice method
             throw new Error('Couldnt find todo!!!');
             res.json({message: 'Could not find todo with such index!'});
 
         }
-        this.TODOS.splice(taskIndex, 1)
+        const deletedTask = this.TODOS.splice(taskIndex, 1)[0]
+        await fileManager.writeFile('./data/todos.json', this.TODOS)
         res.json({
             message: 'Todo deleted',
-            deleteTodo: taskIndex,
+            deleteTodo: deletedTask,
 
         })
 
